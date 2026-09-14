@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UniCoPlan</title>
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#05080E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600;700&family=Chakra+Petch:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-950:#05080E; --navy-900:#0B1220; --navy-800:#101B2E; --navy-border:#1B2A45;
+    --blue:#3E8EFF; --blue-dark:#2569D6; --blue-soft:#12294A; --blue-soft-border:#2A4C82;
+    --ink:#EAF2FF; --ink-soft:#8098BE;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; min-height:100vh; background:var(--navy-950); color:var(--ink);
+    font-family:'Inter', system-ui, sans-serif;
+    display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .wrap{ width:100%; max-width:640px; text-align:center; }
+  .brand{
+    font-family:'Chakra Petch', sans-serif; font-weight:700; font-size:2.1rem;
+    letter-spacing:.02em; margin:0 0 8px;
+  }
+  .sub{ color:var(--ink-soft); margin:0 0 40px; font-size:1.02rem; }
+  .cards{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:520px){ .cards{ grid-template-columns:1fr; } }
+  .card{
+    display:block; text-decoration:none; color:var(--ink);
+    background:var(--navy-900); border:1px solid var(--navy-border);
+    border-radius:14px; padding:28px 20px; transition:border-color .15s ease, transform .15s ease;
+  }
+  .card:hover{ border-color:var(--blue-soft-border); transform:translateY(-2px); }
+  .card h2{ margin:0 0 8px; font-family:'Chakra Petch', sans-serif; font-size:1.15rem; }
+  .card p{ margin:0; color:var(--ink-soft); font-size:.9rem; line-height:1.5; }
+  .badge{
+    display:inline-block; margin-bottom:14px; font-size:.72rem; font-weight:600;
+    letter-spacing:.04em; text-transform:uppercase; color:var(--blue);
+    background:var(--blue-soft); border:1px solid var(--blue-soft-border);
+    border-radius:999px; padding:4px 10px;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1 class="brand">UniCoPlan</h1>
+    <p class="sub">Semester planning, without the clashes.</p>
+    <div class="cards">
+      <a class="card" href="student_panel/Std_index.html">
+        <span class="badge">Open access</span>
+        <h2>Student panel</h2>
+        <p>Browse the course datasheet and build a clash-free schedule.</p>
+      </a>
+      <a class="card" href="admin_panel/admin_index.html">
+        <span class="badge">Open access</span>
+        <h2>Admin panel</h2>
+        <p>Build and manage the semester's course datasheet.</p>
+      </a>
+    </div>
+  </div>
+</body>
+</html>
