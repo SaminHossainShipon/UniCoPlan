@@ -1,0 +1,8 @@
+{
+  "name": "unicoplan",
+  "version": "1.0.0",
+  "description": "Semester planning, without the clashes — admin datasheet builder and student schedule planner.",
+  "scripts": {
+    "test": "node test/script.test.js"
+  }
+}
