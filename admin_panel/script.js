@@ -48,21 +48,149 @@ if (typeof pdfjsLib !== 'undefined'){
 /* ============ page role & persistence ============ */
 // Each HTML page sets window.APP_ROLE ('student' or 'admin') before loading this
 // script, so the student and admin panels are genuinely separate pages rather than
-// a client-side toggle. They share their data through localStorage instead.
+// a client-side toggle.
 const ROLE = window.APP_ROLE === 'admin' ? 'admin' : 'student';
 
 const STORAGE_KEYS = {
-  semesters: 'unicoplan:semesters',
   selections: 'unicoplan:selections',
   combinations: 'unicoplan:combinations'
 };
 
 // The admin panel has no login gate — open access, same as the student panel.
 
+/* ---------- shared datasheet: Supabase ----------
+   Semesters and courses are the one piece of data that genuinely needs to be
+   shared between the admin (who publishes them) and every student (who needs
+   to see the same list) — so they live in Supabase instead of localStorage,
+   which is private to a single browser. Student plans/combinations stay in
+   localStorage below: there's no login system, so there's no account to tie
+   them to across devices anyway, and keeping them local means a student's
+   in-progress plan is never visible to anyone else. */
+const SUPABASE_URL = 'https://jxvpdkpfsexzovbzrrhf.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4dnBka3Bmc2V4em92YnpycmhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkzOTk2NzgsImV4cCI6MjEwNDk3NTY3OH0.RY7PpZjBvq5FucTUNKtVF2vmMVyw4aysm91FuJYGVbU';
+const sb = (typeof window.supabase !== 'undefined')
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
 
-function saveSemesters(){
-  try { localStorage.setItem(STORAGE_KEYS.semesters, JSON.stringify(state.semesters)); }
-  catch (e) { /* storage unavailable (e.g. private browsing quota) — fail silently */ }
+if (!sb){
+  console.error('Supabase client library did not load — check the <script> tag order in the HTML file. Falling back to this device\'s last saved copy only.');
+}
+
+// Coalesces bursts of saves (e.g. a bulk import adding 40 rows in a loop) into
+// a single round trip instead of firing one per row.
+let supabaseSyncInFlight = false;
+let supabaseSyncQueued = false;
+
+async function saveSemesters(){
+  await syncSemestersToSupabase();
+}
+
+async function syncSemestersToSupabase(){
+  if (!sb) return;
+  if (supabaseSyncInFlight){ supabaseSyncQueued = true; return; }
+  supabaseSyncInFlight = true;
+  try {
+    const semesterRows = state.semesters.map(s => ({ id: s.id, name: s.name }));
+
+    if (semesterRows.length){
+      const { error } = await sb.from('semesters').upsert(semesterRows);
+      if (error) throw error;
+    }
+    // remove semesters that were deleted locally since the last sync
+    const { data: existingSem, error: exErr } = await sb.from('semesters').select('id');
+    if (exErr) throw exErr;
+    const keepSemIds = new Set(semesterRows.map(s => s.id));
+    const removeSemIds = (existingSem || []).map(r => r.id).filter(id => !keepSemIds.has(id));
+    if (removeSemIds.length) await sb.from('semesters').delete().in('id', removeSemIds);
+
+    // courses: full replace per semester. The datasheet is small (tens to a
+    // couple hundred rows), so a delete-then-upsert per save is simple and
+    // correct without needing to diff individual row changes.
+    for (const sem of state.semesters){
+      const courseRows = sem.courses.map(c => ({
+        id: c.id,
+        semester_id: sem.id,
+        code: c.code,
+        section: c.section,
+        faculty: c.faculty || '',
+        capacity: c.capacity,
+        seats_taken: c.seatsTaken || 0,
+        meetings: c.meetings || []
+      }));
+      const { data: existingCourses, error: ecErr } = await sb.from('courses').select('id').eq('semester_id', sem.id);
+      if (ecErr) throw ecErr;
+      const keepCourseIds = new Set(courseRows.map(c => c.id));
+      const removeCourseIds = (existingCourses || []).map(r => r.id).filter(id => !keepCourseIds.has(id));
+      if (removeCourseIds.length) await sb.from('courses').delete().in('id', removeCourseIds);
+      if (courseRows.length){
+        const { error: upErr } = await sb.from('courses').upsert(courseRows);
+        if (upErr) throw upErr;
+      }
+    }
+  } catch (e){
+    console.error('Supabase sync failed — your change is only saved on this device for now. Check your connection and try again.', e);
+  } finally {
+    supabaseSyncInFlight = false;
+    if (supabaseSyncQueued){
+      supabaseSyncQueued = false;
+      syncSemestersToSupabase();
+    }
+  }
+}
+
+// Pulls the full datasheet down from Supabase (the shared source of truth)
+// and rebuilds state.semesters from it.
+async function refreshSemestersFromSupabase(){
+  if (!sb) return false;
+  try {
+    const { data: sems, error: semErr } = await sb.from('semesters').select('id,name').order('created_at', { ascending: true });
+    if (semErr) throw semErr;
+    const { data: courses, error: courseErr } = await sb.from('courses').select('*');
+    if (courseErr) throw courseErr;
+
+    const bySemester = {};
+    (courses || []).forEach(c => {
+      (bySemester[c.semester_id] || (bySemester[c.semester_id] = [])).push({
+        id: c.id,
+        code: c.code,
+        section: c.section,
+        faculty: c.faculty || '',
+        capacity: c.capacity,
+        seatsTaken: c.seats_taken || 0,
+        meetings: c.meetings || []
+      });
+    });
+
+    const semesters = (sems || []).map(s => ({ id: s.id, name: s.name, courses: bySemester[s.id] || [] }));
+    semesters.forEach(sem => sortCourses(sem));
+
+    state.semesters = semesters;
+    if (!getSemester(state.adminSemesterId) && semesters[0]) state.adminSemesterId = semesters[0].id;
+    if (!getSemester(state.studentSemesterId) && semesters[0]) state.studentSemesterId = semesters[0].id;
+    return true;
+  } catch (e){
+    console.error('Could not reach Supabase — showing the last copy this device saw.', e);
+    return false;
+  }
+}
+
+// Live updates: when the admin changes the datasheet, every open student (and
+// admin) tab refreshes automatically instead of needing a manual reload.
+function subscribeToDatasheetChanges(){
+  if (!sb) return;
+  sb.channel('datasheet-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'semesters' }, () => onRemoteDatasheetChange())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'courses' }, () => onRemoteDatasheetChange())
+    .subscribe();
+}
+let remoteRefreshTimer = null;
+function onRemoteDatasheetChange(){
+  // Debounce — a bulk import can fire many change events in quick succession.
+  clearTimeout(remoteRefreshTimer);
+  remoteRefreshTimer = setTimeout(async () => {
+    await refreshSemestersFromSupabase();
+    renderApp();
+  }, 250);
 }
 
 function saveSelections(){
@@ -75,21 +203,7 @@ function saveCombinations(){
   catch (e) { /* ignore */ }
 }
 
-function loadPersistedState(){
-  let semesters = null;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEYS.semesters);
-    if (raw) semesters = JSON.parse(raw);
-  } catch (e) { semesters = null; }
-
-  if (Array.isArray(semesters) && semesters.length > 0){
-    state.semesters = semesters;
-    state.adminSemesterId = semesters[0].id;
-    state.studentSemesterId = semesters[0].id;
-  }
-  // else: no persisted data — state.semesters stays empty ([]), so the UI shows
-  // its normal "create a semester to get started" empty state instead of seed data.
-
+async function loadPersistedState(){
   try {
     const rawSel = localStorage.getItem(STORAGE_KEYS.selections);
     if (rawSel) state.selections = JSON.parse(rawSel);
@@ -99,23 +213,16 @@ function loadPersistedState(){
     const rawCombos = localStorage.getItem(STORAGE_KEYS.combinations);
     if (rawCombos) state.combinations = JSON.parse(rawCombos);
   } catch (e) { /* keep default {} */ }
+
+  await refreshSemestersFromSupabase();
+  subscribeToDatasheetChanges();
 }
 
-
-// Cross-tab sync: if the admin panel and student panel are open in different tabs,
-// pick up changes made in the other tab without needing a manual refresh.
+// Cross-tab sync: if the admin panel and student panel are open in different tabs
+// on the *same device*, pick up local plan/combination changes made in the other
+// tab without needing a manual refresh. The shared datasheet itself syncs across
+// devices too, via the Supabase realtime subscription above.
 window.addEventListener('storage', e => {
-  if (e.key === STORAGE_KEYS.semesters){
-    try {
-      const semesters = JSON.parse(e.newValue || '[]');
-      if (Array.isArray(semesters) && semesters.length > 0){
-        state.semesters = semesters;
-        if (!getSemester(state.adminSemesterId)) state.adminSemesterId = semesters[0].id;
-        if (!getSemester(state.studentSemesterId)) state.studentSemesterId = semesters[0].id;
-        renderApp();
-      }
-    } catch (err) { /* ignore malformed payloads */ }
-  }
   if (e.key === STORAGE_KEYS.selections){
     try {
       state.selections = JSON.parse(e.newValue || '{}');
@@ -1937,5 +2044,5 @@ function renderSelectedList(){
 /* ============ start ============ */
 initEditModal();
 initAddModal();
-loadPersistedState();
-renderApp();
+renderApp(); // paint immediately (empty state) while the datasheet loads
+loadPersistedState().then(() => renderApp());
