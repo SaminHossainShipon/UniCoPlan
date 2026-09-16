@@ -1224,7 +1224,7 @@ function adminAccessTemplate(){
   return `
     <section class="form-card" style="max-width:560px">
       <h3>Manage access</h3>
-      <p class="empty-note" style="padding-top:0">Grant admin-panel access to another Google account below. Anyone signing in with an @std.ewubd.std address already gets student-panel access automatically — you don't need to add students here.</p>
+      <p class="empty-note" style="padding-top:0">Grant admin-panel access to another Google account below. Anyone signing in with an @std.ewubd.edu address already gets student-panel access automatically — you don't need to add students here.</p>
       <form id="addAccessForm" class="inline-form">
         <input type="email" id="newAdminEmail" placeholder="name@gmail.com" required style="flex:1">
         <button type="submit" class="btn btn-ghost">+ Grant admin access</button>
