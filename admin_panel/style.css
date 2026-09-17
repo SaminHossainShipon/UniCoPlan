@@ -33,11 +33,44 @@
 *{ box-sizing:border-box; }
 html,body{ margin:0; padding:0; }
 body{
+  position:relative;
   font-family:'Inter', sans-serif;
   background:var(--navy-950);
   color:var(--ink);
   line-height:1.45;
+  overflow-x:hidden;
 }
+/* Atmospheric space backdrop — a soft blue light beam from the top-left
+   corner plus a scattered starfield, both fixed to the viewport so they
+   stay put behind the content as the page scrolls. Purely decorative
+   (pointer-events:none) and sits at z-index:0; real content is lifted to
+   z-index:1 below so nothing is ever covered by it. */
+body::before{
+  content:''; position:fixed; top:0; right:0; bottom:0; left:0; z-index:0; pointer-events:none;
+  background:
+    linear-gradient(128deg, rgba(94,163,255,.28) 0%, rgba(62,142,255,.14) 18%, transparent 42%),
+    radial-gradient(1100px 750px at -8% -12%, rgba(62,142,255,.40), transparent 55%),
+    radial-gradient(760px 480px at 20% 4%, rgba(120,180,255,.22), transparent 62%);
+}
+body::after{
+  content:''; position:fixed; top:0; right:0; bottom:0; left:0; z-index:0; pointer-events:none; opacity:.85;
+  background-image:
+    radial-gradient(2px 2px at 8% 10%, #fff, transparent 60%),
+    radial-gradient(2px 2px at 21% 34%, #cfe0ff, transparent 60%),
+    radial-gradient(2.5px 2.5px at 34% 14%, #fff, transparent 60%),
+    radial-gradient(2px 2px at 47% 46%, #fff, transparent 60%),
+    radial-gradient(2px 2px at 61% 22%, #cfe0ff, transparent 60%),
+    radial-gradient(2.5px 2.5px at 73% 56%, #fff, transparent 60%),
+    radial-gradient(2px 2px at 84% 16%, #fff, transparent 60%),
+    radial-gradient(2px 2px at 91% 63%, #cfe0ff, transparent 60%),
+    radial-gradient(2px 2px at 6% 72%, #fff, transparent 60%),
+    radial-gradient(2.5px 2.5px at 27% 84%, #fff, transparent 60%),
+    radial-gradient(2px 2px at 54% 90%, #cfe0ff, transparent 60%),
+    radial-gradient(2px 2px at 79% 94%, #fff, transparent 60%),
+    radial-gradient(2px 2px at 96% 30%, #fff, transparent 60%),
+    radial-gradient(2px 2px at 40% 66%, #cfe0ff, transparent 60%);
+}
+#header, #mainView{ position:relative; z-index:1; }
 .mono{ font-family:'IBM Plex Mono', monospace; }
 h2,h3{ font-family:'Chakra Petch', sans-serif; margin:0; letter-spacing:-.01em; }
 h2{ font-size:1.3rem; font-weight:600; }
@@ -140,8 +173,9 @@ button, input, select{ font-family:inherit; }
 /* ---------- admin workspace ---------- */
 .workspace{ display:grid; grid-template-columns:360px 1fr; gap:24px; margin-top:22px; align-items:start; }
 .form-card, .table-card, .list-card, .schedule-card{
-  background:var(--white); border:1px solid var(--grey-200); border-radius:var(--radius-m); padding:20px;
-  box-shadow:var(--shadow-card);
+  background:rgba(11,18,32,.72); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+  border:1px solid var(--grey-200); border-radius:var(--radius-m); padding:20px;
+  box-shadow:var(--shadow-card), 0 0 0 1px rgba(62,142,255,.05);
 }
 form label{ display:block; font-size:.8rem; color:var(--ink-soft); margin-bottom:12px; }
 form input:not([type=checkbox]){
@@ -297,7 +331,7 @@ tr.row-error{ background:var(--red-soft); }
 
 /* ---------- edit-course modal ---------- */
 .modal-overlay{ position:fixed; inset:0; background:rgba(3,6,12,.68); display:none; align-items:center; justify-content:center; z-index:50; padding:20px; }
-.modal-card{ background:var(--white); border:1px solid var(--grey-200); border-radius:var(--radius-m); padding:22px; width:100%; max-width:440px; max-height:90vh; overflow-y:auto; box-shadow:var(--shadow-card); }
+.modal-card{ background:rgba(11,18,32,.88); backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px); border:1px solid var(--grey-200); border-radius:var(--radius-m); padding:22px; width:100%; max-width:440px; max-height:90vh; overflow-y:auto; box-shadow:var(--shadow-card), 0 0 0 1px rgba(62,142,255,.06); }
 .modal-card h3{ margin-bottom:16px; }
 .modal-actions{ display:flex; gap:10px; margin-top:4px; }
 .modal-actions .btn{ flex:1; }
