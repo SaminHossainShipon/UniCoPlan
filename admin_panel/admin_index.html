@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UniCoPlan — Admin</title>
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#05080E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600;700&family=Chakra+Petch:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/admin_panel/style.css">
+</head>
+<body>
+  <div id="header"></div>
+  <div id="profileMenuLayer"></div>
+  <div id="mainView"></div>
+
+  <!-- Edit-course modal (admin only). Lives outside #mainView so it survives page
+       re-renders without needing its own state-driven template. -->
+  <div id="editModalOverlay" class="modal-overlay">
+    <div class="modal-card">
+      <h3>Edit course</h3>
+      <div id="editFlash" class="flash"></div>
+      <p class="import-help" id="editMultiMeetingNote" style="display:none">This course currently has more than one meeting time (often from a file import). Saving here will simplify it down to the single meeting set below.</p>
+      <form id="editCourseForm">
+        <div class="form-row">
+          <label>Course
+            <input type="text" id="editCode" name="code" required>
+          </label>
+          <label>Section
+            <input type="text" id="editSection" name="section" required>
+          </label>
+        </div>
+        <label>Faculty <span class="muted">(optional)</span>
+          <input type="text" id="editFaculty" name="faculty">
+        </label>
+        <div class="form-row">
+          <label>Capacity
+            <input type="number" id="editCapacity" name="capacity" min="1" required>
+          </label>
+          <label>Room no. <span class="muted">(optional)</span>
+            <input type="text" id="editRoom" name="room">
+          </label>
+        </div>
+        <fieldset class="day-picker">
+          <legend>Meets on</legend>
+          <span id="editDayChecks"></span>
+        </fieldset>
+        <div class="form-row">
+          <label>Start time
+            <input type="time" id="editStart" name="start" required>
+          </label>
+          <label>End time
+            <input type="time" id="editEnd" name="end" required>
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="editCancelBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add-course modal (admin only, Course datasheet edit page). Mirrors the edit
+       modal's structure/fields but creates a brand-new row instead of updating one. -->
+  <div id="addModalOverlay" class="modal-overlay">
+    <div class="modal-card">
+      <h3>Add course</h3>
+      <div id="addFlash" class="flash"></div>
+      <form id="addCourseFormModal">
+        <div class="form-row">
+          <label>Course
+            <input type="text" id="addCode" name="code" required>
+          </label>
+          <label>Section
+            <input type="text" id="addSection" name="section" required>
+          </label>
+        </div>
+        <label>Faculty <span class="muted">(optional)</span>
+          <input type="text" id="addFaculty" name="faculty">
+        </label>
+        <div class="form-row">
+          <label>Capacity
+            <input type="number" id="addCapacity" name="capacity" min="1" value="40" required>
+          </label>
+          <label>Room no. <span class="muted">(optional)</span>
+            <input type="text" id="addRoom" name="room">
+          </label>
+        </div>
+        <fieldset class="day-picker">
+          <legend>Meets on</legend>
+          <span id="addDayChecks"></span>
+        </fieldset>
+        <div class="form-row">
+          <label>Start time
+            <input type="time" id="addStart" name="start" value="09:00" required>
+          </label>
+          <label>End time
+            <input type="time" id="addEnd" name="end" value="10:30" required>
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="addCancelBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add course</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- PNG export for the weekly timetable -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <!-- File-import libraries: CSV, Excel, and PDF parsing for the admin import panel -->
+  <!-- These stay as external <script src> tags -- they are large third-party libraries
+       (not part of this project's own code), same as importing a package in any app. -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+  <!-- Supabase client — the shared course datasheet lives here instead of
+       localStorage, so admin and student panels (on any device) see the same data. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+  <script src="/admin_panel/script.js"></script>
+</body>
+</html>
