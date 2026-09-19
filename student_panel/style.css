@@ -151,10 +151,10 @@ button, input, select{ font-family:inherit; }
   box-shadow:var(--shadow-card), 0 0 0 1px rgba(62,142,255,.06);
 }
 .profile-dropdown.show{ display:block; }
-.profile-dropdown-row{ display:flex; justify-content:space-between; gap:12px; padding:6px 0; border-bottom:1px solid var(--grey-200); font-size:.82rem; }
+.profile-dropdown-row{ display:flex; flex-direction:column; gap:3px; padding:6px 0; border-bottom:1px solid var(--grey-200); font-size:.82rem; }
 .profile-dropdown-row:last-of-type{ border-bottom:none; }
 .profile-dropdown-label{ color:var(--ink-soft); }
-.profile-dropdown-value{ color:var(--ink); font-weight:600; max-width:170px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:right; }
+.profile-dropdown-value{ color:var(--ink); font-weight:600; max-width:100%; overflow-wrap:anywhere; word-break:break-word; white-space:normal; text-align:left; }
 .profile-dropdown-signout{
   width:100%; margin-top:12px; background:transparent; border:1px solid var(--grey-300); color:var(--ink);
   padding:8px 14px; border-radius:999px; font-size:.85rem; font-weight:600; cursor:pointer;
