@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/student", "destination": "/student_panel/Std_index.html" },
+    { "source": "/admin", "destination": "/admin_panel/admin_index.html" }
+  ]
+}
